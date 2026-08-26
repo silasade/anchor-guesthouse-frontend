@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LogOutIcon, MenuIcon, UserRoundIcon } from "lucide-react";
+import { LogOutIcon, UserRoundIcon } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import Sidebar from "@/global_components/Sidebar";
 import { RoleBadge } from "@/global_components/StatusBadge";
 import ThemeToggle from "@/global_components/ThemeToggle";
@@ -20,7 +20,6 @@ import { useLogout } from "@/services/mutations/Auth";
 
 /** Sidebar + top bar chrome wrapped around every `/dashboard/*` screen. */
 function DashboardShell({ children }: { children: React.ReactNode }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user, role } = useSession();
   const logout = useLogout();
   const navigate = useNavigate();
@@ -31,30 +30,19 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="bg-background flex min-h-dvh">
-      <Sidebar
-        role={role}
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
+    <SidebarProvider defaultOpen={true}>
+      <Sidebar role={role} />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <SidebarInset>
         <header className="bg-background/85 border-border sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b px-4 backdrop-blur-md lg:px-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setIsSidebarOpen(true)}
-            aria-label="Open navigation"
-          >
-            <MenuIcon />
-          </Button>
-
-          <div className="hidden min-w-0 flex-1 lg:block">
-            <p className="text-muted-foreground truncate text-sm">
-              Signed in as{" "}
-              <span className="text-foreground font-medium">{user?.name}</span>
-            </p>
+          <div className="flex items-center gap-3">
+            <SidebarTrigger />
+            <div className="hidden min-w-0 flex-1 sm:block">
+              <p className="text-muted-foreground truncate text-sm">
+                Signed in as{" "}
+                <span className="text-foreground font-medium">{user?.name}</span>
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -102,8 +90,8 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 lg:px-6 lg:py-8">
           {children}
         </main>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
 

@@ -1,92 +1,125 @@
-import { Link } from "@tanstack/react-router";
-import { XIcon } from "lucide-react";
+import { Link, useLocation } from "@tanstack/react-router";
+import { ClockIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Sidebar as SidebarPrimitive,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import Logo from "@/global_components/Logo";
-import { cn } from "@/lib/utils";
 import { CHECKOUT_CUTOFF_LABEL } from "@/utils/constants";
 import { navItemsForRole } from "@/utils/navigation";
 import type { UserRole } from "@/utils/types/Auth.type";
 
 type SidebarProps = {
   role: UserRole | null;
-  /** Mobile drawer state; on `lg` and up the rail is always visible. */
-  isOpen: boolean;
-  onClose: () => void;
 };
 
-function Sidebar({ role, isOpen, onClose }: SidebarProps) {
+function AppSidebar({ role }: SidebarProps) {
   const items = navItemsForRole(role);
+  const { isMobile, state, setOpenMobile } = useSidebar();
+  const location = useLocation();
+  const isCollapsed = state === "collapsed" && !isMobile;
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
-    <>
-      {isOpen && (
-        <div
-          role="presentation"
-          onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-        />
-      )}
-
-      <aside
-        className={cn(
-          "bg-sidebar text-sidebar-foreground border-sidebar-border fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r transition-transform duration-200 lg:sticky lg:top-0 lg:h-dvh lg:translate-x-0",
-          isOpen ? "translate-x-0" : "-translate-x-full",
-        )}
-      >
-        <div className="flex h-16 shrink-0 items-center justify-between px-5">
-          <Link to="/dashboard" onClick={onClose}>
-            <Logo />
+    <SidebarPrimitive collapsible="icon">
+      <SidebarHeader className="h-16 justify-center px-4">
+        <div className="flex items-center justify-between">
+          <Link to="/dashboard" onClick={handleNavClick} className="flex items-center">
+            <Logo markOnly={isCollapsed} />
           </Link>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="lg:hidden"
-            onClick={onClose}
-            aria-label="Close navigation"
-          >
-            <XIcon />
-          </Button>
-        </div>
-
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
-          {items.map((item) => (
-            <Link
-              key={item.label}
-              to={item.to}
-              onClick={onClose}
-              activeOptions={{ exact: item.to === "/dashboard" }}
-              activeProps={{
-                className:
-                  "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm",
-              }}
-              inactiveProps={{
-                className:
-                  "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-              }}
-              className="flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setOpenMobile(false)}
+              aria-label="Close navigation"
             >
-              <item.icon className="mt-0.5 size-4 shrink-0" />
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <span>{item.label}</span>
-                <span className="truncate text-[11px] font-normal opacity-70">
-                  {item.description}
-                </span>
-              </span>
-            </Link>
-          ))}
-        </nav>
-
-        <div className="border-sidebar-border shrink-0 border-t p-4">
-          <p className="text-muted-foreground text-[11px] leading-relaxed">
-            Daily checkout cutoff
-            <span className="text-foreground block font-medium">
-              {CHECKOUT_CUTOFF_LABEL}
-            </span>
-          </p>
+              <XIcon className="size-4" />
+            </Button>
+          )}
         </div>
-      </aside>
-    </>
+      </SidebarHeader>
+
+      <SidebarContent className="px-2 py-2">
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map((item) => {
+                const targetPath = item.to ?? "";
+                const isActive =
+                  targetPath === "/dashboard"
+                    ? location.pathname === "/dashboard"
+                    : location.pathname.startsWith(targetPath);
+
+                return (
+                  <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={item.label}
+                      size="lg"
+                    >
+                      <Link to={item.to} onClick={handleNavClick}>
+                        <item.icon className="size-5 shrink-0" />
+                        <span className="flex min-w-0 flex-col gap-0.5 group-data-[collapsible=icon]:hidden">
+                          <span className="font-medium leading-none">{item.label}</span>
+                          <span className="truncate text-[11px] font-normal opacity-70">
+                            {item.description}
+                          </span>
+                        </span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t border-sidebar-border p-3">
+        {isCollapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex size-9 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
+                <ClockIcon className="size-4" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              Daily checkout cutoff: {CHECKOUT_CUTOFF_LABEL}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <div className="rounded-lg bg-sidebar-accent/50 p-3 text-xs">
+            <p className="text-muted-foreground text-[11px] leading-relaxed">
+              Daily checkout cutoff
+              <span className="text-foreground block font-medium">
+                {CHECKOUT_CUTOFF_LABEL}
+              </span>
+            </p>
+          </div>
+        )}
+      </SidebarFooter>
+
+      <SidebarRail />
+    </SidebarPrimitive>
   );
 }
 
-export default Sidebar;
+export default AppSidebar;
